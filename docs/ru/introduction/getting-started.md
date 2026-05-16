@@ -1,5 +1,5 @@
 ---
-title: dbschemix - установка migrator через composer
+title: dbschemix - начало работы с migrator
 lang: ru-RU
 ---
 
@@ -7,42 +7,65 @@ lang: ru-RU
 
 ## Установка
 
-Установите migrator через Composer:
+Добавьте библиотеку в проект с помощью Composer. Для работы требуется PHP с расширением `pdo` и хотя бы одним из драйверов: `pdo_pgsql`, `pdo_mysql` или `pdo_sqlite`.
 
 ```bash
 composer require dbschemix/migrator
 ```
 
-## Конфигурация
+## Структура каталогов
 
-Создаём каталоги, где будут храниться файлы миграций.
+Миграции хранятся в каталоге по пути `migration/<driver>/<db-name>/`. Рядом с основным каталогом можно разместить каталог `<db-name>-fixture` для фикстур (тестовые данные) и `<db-name>-repeatable` для повторяемых миграций — тех, что применяются заново при изменении содержимого файла. Все три каталога создаются одной командой:
 
-Например, для базы данных с именем _main_ под управлением сервера **postgres**:
-```shell
-mkdir -p ./migration/pgsql/{main,main-fixture} 
+```bash
+mkdir -p ./migration/postgres/{main,main-fixture,main-repeatable}
 ```
 
-Минимально рабочая конфигурация:
+## Минимальная конфигурация
+
+Создайте PHP-файл, в котором описывается объект `Migrator`. Конструктор принимает массив объектов `Migration`, каждый из которых содержит путь к каталогу миграций и экземпляр драйвера. Ниже приведён пример для PostgreSQL. Подробное описание всех параметров конфигурации смотрите в разделе [Конфигурация](configuration.md).
+
 ```php
+use dbschemix\pdo\Driver;
+use dbschemix\core\Migration;
+use dbschemix\core\Migrator;
+
 $migrator = new Migrator(
     list: [
         new Migration(
             path: __DIR__ . '/migration/postgres/main',
-            driver: new PdoDriver(
+            driver: new Driver(
                 dsn: 'pgsql:host=postgres;port=5432;dbname=main',
                 username: 'postgres',
                 password: 'postgres',
-            )
-        )
+            ),
+        ),
     ],
 );
 ```
 
-Чтобы узнать больше о конфигурации, посетите раздел [Конфигурация](configuration.md).
+## Точка входа CLI
 
-## Миграции
+`Console::run($migrator)` регистрирует все семь команд `migrate:*` и запускает консольное приложение. Рекомендуется добавить `PrettyConsoleOutput` в список подписчиков событий — тогда результат каждой операции будет выводиться в консоль в читаемом виде.
 
-Команды миграции описываются на языке SQL, например:
+```php
+use dbschemix\migrator\cmd\Console;
+use dbschemix\migrator\tools\PrettyConsoleOutput;
+
+require __DIR__ . '/vendor/autoload.php';
+
+$migrator = new Migrator(
+    list: [/* ... */],
+    eventSubscribers: [new PrettyConsoleOutput()],
+);
+
+Console::run($migrator);
+```
+
+## Первая миграция
+
+Имя файла миграции начинается с числового префикса (timestamp), который определяет порядок применения, — например, `202501011024_entity_create.sql`. Файл содержит секции `-- @up` (применение) и `-- @down` (откат). Поддерживаются теги `@up`, `@down` и `@skip`. Если ни одного тега в файле нет, весь файл трактуется как `@up`. Чтобы пропустить файл целиком, добавьте к его имени постфикс `_skip`, например `202501011025_name_skip.sql`.
+
 ```sql
 -- @up
 CREATE TABLE IF NOT EXISTS public.entity (
@@ -52,22 +75,29 @@ CREATE TABLE IF NOT EXISTS public.entity (
     updated_at timestamp(0) DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT entity_pkey PRIMARY KEY (id)
 );
-CREATE INDEX IF NOT EXISTS "I_entity_parent_id" ON public.entity USING btree (parent_id);
 
 -- @down
-DROP INDEX IF EXISTS I_entity_parent_id;
 DROP TABLE IF EXISTS public.entity;
 ```
 
-Управляющие команды:
+## Первые команды
 
-- `@up`
-- `@down`
-- `@skip`
+Перед первым применением миграций выполните `migrate:init` — команда создаёт служебную таблицу версий в базе данных. После этого `migrate:up` применяет все ожидающие миграции в порядке возрастания имени файла, а `migrate:down` откатывает последнюю применённую миграцию.
 
-Если команды не указаны, то весь код будет вычитан как секция `up`.  
-Если нужно скипнуть файл целиком, то можно добавить в название постфикс `skip`, например `202501011025_name_skip.sql`
+```shell
+/example $ php cli.php migrate:init
+[sqlite/db] initialization: setup.sql done
 
-## Запуск миграций
+/example $ php cli.php migrate:up
+[sqlite/db] up: 202501011024_entity_create.sql done
 
-Чтобы увидеть больше примеров, посетите раздел [Примеры API](../example/examples.md).
+/example $ php cli.php migrate:down
+[sqlite/db] down: 202501011024_entity_create.sql done
+```
+
+## Что дальше
+
+- Полная конфигурация: [Конфигурация](configuration.md)
+- Все команды CLI: [CLI справочник](../guide/cli.md)
+- Docker: [Docker](../guide/docker.md)
+- Примеры: [Базовые сценарии](../example/base.md)
