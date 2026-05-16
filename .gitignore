@@ -1,0 +1,10 @@
+# phpstorm project files
+.idea
+.zed
+.claude
+# Mac DS_Store Files
+.DS_Store
+
+node_modules
+.vitepress
+*.env

@@ -1,0 +1,19 @@
+{
+  "name": "dbschemix-docs",
+  "version": "1.0.0",
+  "description": "database migration",
+  "license": "MIT",
+  "author": "",
+  "type": "module",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "vitepress dev --host 0.0.0.0 --port 8080",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.4"
+  }
+}
