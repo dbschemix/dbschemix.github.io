@@ -12,14 +12,14 @@ hero:
       link: /ru/introduction/about
     - theme: alt
       text: API примеры
-      link: /ru/example/examples
+      link: /ru/example/base
 
 features:
   - title: Чистый SQL
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Кастомные драйвера
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+    details: Миграции пишутся на SQL без DSL и Active Record — то, что хранится в файле, то и выполнится в базе данных.
+  - title: Кастомные драйверы
+    details: По умолчанию работа через PDO для MySQL, PostgreSQL и SQLite. При необходимости драйвер заменяется на собственный.
   - title: Версионирование
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+    details: Миграции, применённые одним прогоном up, помечаются общим номером версии и откатываются одной командой.
 ---
 
