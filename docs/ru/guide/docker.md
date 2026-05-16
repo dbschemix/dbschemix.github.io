@@ -1,18 +1,17 @@
 ---
-title: dbschemix - docker compose service
+title: dbschemix - запуск migrator в docker
 lang: ru-RU
 ---
 
-# Docker / docker-compose
+# Docker
 
-The library ships a thin runtime image. The image contains PHP, the
-`pdo_mysql` / `pdo_pgsql` / `pdo_sqlite` extensions and an entrypoint — it
-does **not** contain the library. The library and your custom code
-(e.g. `eventSubscribers`) come from your project's mounted `vendor/`.
+## Что в образе
 
-## Configuration
+Образ `ghcr.io/dbschemix/migrator:1` — тонкий runtime: PHP с расширениями `pdo_mysql`, `pdo_pgsql`, `pdo_sqlite` и entrypoint. Библиотека и код проекта в образ не включены. Они подтягиваются из примонтированного `vendor/` вашего проекта — это позволяет обновлять библиотеку независимо от образа.
 
-**Config contract.** Provide a PHP file that returns the `Migrator`:
+## Контракт конфиг-файла
+
+Контейнер ожидает PHP-файл, который возвращает экземпляр `MigratorInterface`. Файл сам отвечает за автозагрузку и должен подключать `vendor/autoload.php`. Пути внутри файла задавайте через `__DIR__`, чтобы они корректно разрешались внутри примонтированного контейнера. `eventSubscribers` — обычный массив объектов, никакой специальной нотации не требуется.
 
 ```php
 <?php
@@ -23,37 +22,43 @@ require __DIR__ . '/vendor/autoload.php';
 
 use dbschemix\pdo\Driver;
 use dbschemix\core\{Migration, Migrator};
-use dbschemix\migrator\tools\TraceConsoleOutput;
+use dbschemix\migrator\tools\PrettyConsoleOutput;
 
-$migrator = new Migrator(
+return new Migrator(
     list: [
         new Migration(
             path: __DIR__ . '/migration/pgsql/main',
-            driver: new Driver('pgsql:host=postgres;port=5432;dbname=main', 'postgres', 'postgres'),
+            driver: new Driver(
+                dsn: 'pgsql:host=postgres;port=5432;dbname=main',
+                username: 'postgres',
+                password: 'postgres',
+            ),
         ),
     ],
     eventSubscribers: [
-        new TraceConsoleOutput(),
+        new PrettyConsoleOutput(),
     ],
 );
-
-return $migrator;
 ```
 
-The file is responsible for its own autoload and must end with
-`return $migrator;`. Resolve paths with `__DIR__` so they work inside the
-mounted container. `eventSubscribers` is plain PHP — list instances of any
-class (including your own), no special notation.
+Если файл не возвращает `MigratorInterface`, `Bootstrap` выбрасывает `RuntimeException` с сообщением:
 
-## Docker Compose
+```
+config must end with "return $migrator;" and return an instance of ...MigratorInterface.
+```
 
-**docker-compose service.** Mount your project, point `MIGRATOR_CONFIG` at
-the config file, and pass the migration command via `command:`:
+## Переменная MIGRATOR_CONFIG
+
+`MIGRATOR_CONFIG` — переменная окружения, которая указывает контейнеру путь к конфиг-файлу. Значение по умолчанию: `/app/migrator.php`. Достаточно примонтировать проект в `/app`, чтобы дефолт сработал без явного указания переменной.
+
+## docker-compose
+
+Примонтируйте проект, задайте `MIGRATOR_CONFIG` и передайте команду через `command:`:
 
 ```yaml
 services:
   migrator:
-    image: ghcr.io/dbschemix/migrator:latest
+    image: ghcr.io/dbschemix/migrator:1
     init: true
     environment:
       MIGRATOR_CONFIG: /app/migrator.php
@@ -65,7 +70,12 @@ services:
         condition: service_healthy
 ```
 
-`MIGRATOR_CONFIG` defaults to `/app/migrator.php`. `init: true` ensures
-signals (e.g. `docker compose stop`) are delivered cleanly. Any
-`migrate:*` command and its options are accepted, exactly as in the CLI.
+`init: true` обеспечивает корректную передачу сигналов — например, при `docker compose stop`. `depends_on` с `condition: service_healthy` гарантирует, что migrator стартует только после готовности базы данных. Любая команда `migrate:*` и её опции работают так же, как в обычном CLI.
 
+## Готовый пример
+
+В репозитории лежит работающий пример с SQLite: `runtime/example/docker/migrator.php`. Собрать и опробовать локально:
+
+```bash
+make docker-runtime
+```
