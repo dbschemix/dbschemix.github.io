@@ -99,5 +99,5 @@ Before applying migrations for the first time, run `migrate:init` — the comman
 
 - Full configuration: [Configuration](configuration.md)
 - All CLI commands: [CLI reference](../guide/cli.md)
-- Docker: [Docker](../guide/docker.md)
 - Examples: [Basic scenarios](../example/base.md)
+- Docker: [Docker](../guide/docker.md)

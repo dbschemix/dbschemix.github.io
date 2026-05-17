@@ -7,7 +7,7 @@ lang: en-US
 
 ## What is in the image
 
-The image `ghcr.io/dbschemix/migrator:1` is a thin runtime: PHP with the `pdo_mysql`, `pdo_pgsql`, and `pdo_sqlite` extensions and an entrypoint. The library and project code are not included in the image. They are pulled from the mounted `vendor/` directory of your project — this allows updating the library independently of the image.
+The image `ghcr.io/dbschemix/migrator` is a thin runtime: PHP with the `pdo_mysql`, `pdo_pgsql`, and `pdo_sqlite` extensions and an entrypoint. The library and project code are not included in the image. They are pulled from the mounted `vendor/` directory of your project — this allows updating the library independently of the image.
 
 ## Config file contract
 
@@ -22,7 +22,7 @@ require __DIR__ . '/vendor/autoload.php';
 
 use dbschemix\pdo\Driver;
 use dbschemix\core\{Migration, Migrator};
-use dbschemix\migrator\tools\PrettyConsoleOutput;
+use dbschemix\migrator\tools\TraceConsoleOutput;
 
 return new Migrator(
     list: [
@@ -36,7 +36,7 @@ return new Migrator(
         ),
     ],
     eventSubscribers: [
-        new PrettyConsoleOutput(),
+        new TraceConsoleOutput(),
     ],
 );
 ```
@@ -58,7 +58,7 @@ Mount the project, set `MIGRATOR_CONFIG`, and pass the command via `command:`:
 ```yaml
 services:
   migrator:
-    image: ghcr.io/dbschemix/migrator:1
+    image: ghcr.io/dbschemix/migrator:latest
     init: true
     environment:
       MIGRATOR_CONFIG: /app/migrator.php

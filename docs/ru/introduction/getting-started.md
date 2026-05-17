@@ -99,5 +99,5 @@ DROP TABLE IF EXISTS public.entity;
 
 - Полная конфигурация: [Конфигурация](configuration.md)
 - Все команды CLI: [CLI справочник](../guide/cli.md)
-- Docker: [Docker](../guide/docker.md)
 - Примеры: [Базовые сценарии](../example/base.md)
+- Docker: [Docker](../guide/docker.md)

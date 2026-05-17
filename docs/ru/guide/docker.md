@@ -7,7 +7,7 @@ lang: ru-RU
 
 ## Что в образе
 
-Образ `ghcr.io/dbschemix/migrator:1` — тонкий runtime: PHP с расширениями `pdo_mysql`, `pdo_pgsql`, `pdo_sqlite` и entrypoint. Библиотека и код проекта в образ не включены. Они подтягиваются из примонтированного `vendor/` вашего проекта — это позволяет обновлять библиотеку независимо от образа.
+Образ `ghcr.io/dbschemix/migrator` — тонкий runtime: PHP с расширениями `pdo_mysql`, `pdo_pgsql`, `pdo_sqlite` и entrypoint. Библиотека и код проекта в образ не включены. Они подтягиваются из примонтированного `vendor/` вашего проекта — это позволяет обновлять библиотеку независимо от образа.
 
 ## Контракт конфиг-файла
 
@@ -22,7 +22,7 @@ require __DIR__ . '/vendor/autoload.php';
 
 use dbschemix\pdo\Driver;
 use dbschemix\core\{Migration, Migrator};
-use dbschemix\migrator\tools\PrettyConsoleOutput;
+use dbschemix\migrator\tools\TraceConsoleOutput;
 
 return new Migrator(
     list: [
@@ -36,7 +36,7 @@ return new Migrator(
         ),
     ],
     eventSubscribers: [
-        new PrettyConsoleOutput(),
+        new TraceConsoleOutput(),
     ],
 );
 ```
@@ -58,7 +58,7 @@ config must end with "return $migrator;" and return an instance of ...MigratorIn
 ```yaml
 services:
   migrator:
-    image: ghcr.io/dbschemix/migrator:1
+    image: ghcr.io/dbschemix/migrator:latest
     init: true
     environment:
       MIGRATOR_CONFIG: /app/migrator.php
